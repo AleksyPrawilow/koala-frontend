@@ -555,12 +555,11 @@ function App() {
           </main>
         </div>
 
+
         <aside className="right-panel">
           <div className="decor">∑</div>
 
           <div className="right-content">
-            <p className="edition">EDYCJA 2025</p>
-
             <h2>
               Połącz logikę<br />
               z kreatywnością.
@@ -570,16 +569,9 @@ function App() {
               Załóż konto i przygotuj się do wyzwań
               na styku matematyki i informatyki.
             </p>
-
-            <div className="year">
-              2025
-              <span>
-              tegoroczna edycja<br />
-              konkursu KOALA
-            </span>
-            </div>
           </div>
         </aside>
+
 
       </div>
   )
