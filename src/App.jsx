@@ -1,242 +1,237 @@
-
-import { useEffect, useState } from 'react'
-import './App.css'
+import { useEffect, useState } from "react";
+import "./App.css";
 
 function App() {
   const [form, setForm] = useState({
-    firstName: '',
-    lastName: '',
-    email: '',
-    password: '',
-    confirmPassword: '',
-    roleId: '',
-    organizerCode: '',
+    firstName: "",
+    lastName: "",
+    email: "",
+    password: "",
+    confirmPassword: "",
+    roleId: "",
+    organizerCode: "",
     accepted: false,
-  })
+  });
 
-  const [roles, setRoles] = useState([])
-  const [rolesError, setRolesError] = useState('')
-  const [errors, setErrors] = useState({})
-  const [serverError, setServerError] = useState('')
-  const [success, setSuccess] = useState(false)
-  const [loading, setLoading] = useState(false)
+  const [roles, setRoles] = useState([]);
+  const [rolesError, setRolesError] = useState("");
+  const [errors, setErrors] = useState({});
+  const [serverError, setServerError] = useState("");
+  const [success, setSuccess] = useState(false);
+  const [loading, setLoading] = useState(false);
+  const [csrfToken, setCsrfToken] = useState("");
+
+  useEffect(() => {
+    fetch("/api/auth/csrf", { credentials: "include" })
+      .then(async (response) => {
+        if (!response.ok) throw new Error("Could not get CSRF token");
+        return response.json();
+      })
+      .then((data) => setCsrfToken(data.token))
+      .catch((error) => {
+        console.error(error);
+        setServerError("Nie można połączyć się z serwerem.");
+      });
+  }, []);
 
   // Pobieranie ról z backendu
   useEffect(() => {
     async function loadRoles() {
       try {
-        const response = await fetch('/api/roles')
+        const response = await fetch("/api/roles");
 
         if (!response.ok) {
-          throw new Error('Błąd pobierania ról')
+          throw new Error("Błąd pobierania ról");
         }
 
-        const data = await response.json()
+        const data = await response.json();
 
-        setRoles(data.filter(role => role.name !== 'ADMIN'))
-        setRolesError('')
+        setRoles(data.filter((role) => role.name !== "ADMIN"));
+        setRolesError("");
       } catch (error) {
-        console.error(error)
-        setRolesError('Nie udało się pobrać ról z serwera.')
+        console.error(error);
+        setRolesError("Nie udało się pobrać ról z serwera.");
       }
     }
 
-    loadRoles()
-  }, [])
+    loadRoles();
+  }, []);
 
-  const selectedRole = roles.find(
-      role => String(role.id) === form.roleId
-  )
+  const selectedRole = roles.find((role) => String(role.id) === form.roleId);
 
   // Obsługa zmian w formularzu
   function handleChange(event) {
-    const { name, value, type, checked } = event.target
+    const { name, value, type, checked } = event.target;
 
-    setForm(previous => ({
+    setForm((previous) => ({
       ...previous,
-      [name]: type === 'checkbox' ? checked : value,
-    }))
+      [name]: type === "checkbox" ? checked : value,
+    }));
 
-    setErrors(previous => ({
+    setErrors((previous) => ({
       ...previous,
-      [name]: '',
-    }))
+      [name]: "",
+    }));
 
-    setServerError('')
-    setSuccess(false)
+    setServerError("");
+    setSuccess(false);
   }
 
   // Walidacja danych
   function validate() {
-    const newErrors = {}
+    const newErrors = {};
 
     if (!form.firstName.trim()) {
-      newErrors.firstName = 'Podaj imię.'
+      newErrors.firstName = "Podaj imię.";
     } else if (form.firstName.length > 100) {
-      newErrors.firstName = 'Maksymalnie 100 znaków.'
+      newErrors.firstName = "Maksymalnie 100 znaków.";
     }
 
     if (!form.lastName.trim()) {
-      newErrors.lastName = 'Podaj nazwisko.'
+      newErrors.lastName = "Podaj nazwisko.";
     } else if (form.lastName.length > 100) {
-      newErrors.lastName = 'Maksymalnie 100 znaków.'
+      newErrors.lastName = "Maksymalnie 100 znaków.";
     }
 
     if (!/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(form.email)) {
-      newErrors.email = 'Podaj poprawny adres e-mail.'
+      newErrors.email = "Podaj poprawny adres e-mail.";
     }
 
     if (form.password.length < 8 || form.password.length > 64) {
-      newErrors.password = 'Hasło musi mieć od 8 do 64 znaków.'
+      newErrors.password = "Hasło musi mieć od 8 do 64 znaków.";
     }
 
     if (form.password !== form.confirmPassword) {
-      newErrors.confirmPassword = 'Hasła muszą być identyczne.'
+      newErrors.confirmPassword = "Hasła muszą być identyczne.";
     }
 
     if (!selectedRole) {
-      newErrors.roleId = 'Wybierz rolę użytkownika.'
+      newErrors.roleId = "Wybierz rolę użytkownika.";
     }
 
     if (
-        selectedRole?.name === 'ORGANISER' &&
-        !/^[A-Za-z0-9]{6}$/.test(form.organizerCode)
+      selectedRole?.name === "ORGANISER" &&
+      !/^[A-Za-z0-9]{6}$/.test(form.organizerCode)
     ) {
-      newErrors.organizerCode =
-          'Kod musi zawierać dokładnie 6 liter lub cyfr.'
+      newErrors.organizerCode = "Kod musi zawierać dokładnie 6 liter lub cyfr.";
     }
 
     if (!form.accepted) {
-      newErrors.accepted = 'Musisz zaakceptować regulamin.'
+      newErrors.accepted = "Musisz zaakceptować regulamin.";
     }
 
-    return newErrors
+    return newErrors;
   }
 
   // Obsługa błędów z backendu
   function handleApiErrors(data, status) {
-    const fieldErrors = {}
+    const fieldErrors = {};
 
     const knownFields = [
-      'firstName',
-      'lastName',
-      'email',
-      'password',
-      'confirmPassword',
-      'role',
-      'roleId',
-      'organiserCode',
-      'organizerCode',
-    ]
+      "firstName",
+      "lastName",
+      "email",
+      "password",
+      "confirmPassword",
+      "role",
+      "roleId",
+      "organiserCode",
+      "organizerCode",
+    ];
 
     function normalizeField(field) {
-      if (field === 'organiserCode') return 'organizerCode'
-      if (field === 'role') return 'roleId'
-      return field
+      if (field === "organiserCode") return "organizerCode";
+      if (field === "role") return "roleId";
+      return field;
     }
 
-    const source = data?.errors ?? data?.fieldErrors
+    const source = data?.errors ?? data?.fieldErrors;
 
     // Błędy zwrócone jako obiekt
-    if (
-        source &&
-        typeof source === 'object' &&
-        !Array.isArray(source)
-    ) {
+    if (source && typeof source === "object" && !Array.isArray(source)) {
       for (const [key, value] of Object.entries(source)) {
-        if (!knownFields.includes(key)) continue
+        if (!knownFields.includes(key)) continue;
 
         fieldErrors[normalizeField(key)] =
-            typeof value === 'string'
-                ? value
-                : Array.isArray(value)
-                    ? value.join(', ')
-                    : value?.message ?? 'Nieprawidłowa wartość.'
+          typeof value === "string"
+            ? value
+            : Array.isArray(value)
+              ? value.join(", ")
+              : (value?.message ?? "Nieprawidłowa wartość.");
       }
     }
 
     // Błędy zwrócone jako tablica
     if (Array.isArray(source)) {
       for (const item of source) {
-        const key = item?.field ?? item?.property
+        const key = item?.field ?? item?.property;
 
-        if (!knownFields.includes(key)) continue
+        if (!knownFields.includes(key)) continue;
 
         fieldErrors[normalizeField(key)] =
-            item.message ??
-            item.defaultMessage ??
-            'Nieprawidłowa wartość.'
+          item.message ?? item.defaultMessage ?? "Nieprawidłowa wartość.";
       }
     }
 
-    const message = String(
-        data?.message ?? data?.detail ?? ''
-    )
+    const message = String(data?.message ?? data?.detail ?? "");
 
     // Zajęty adres e-mail
     if (
-        /idx_users_email|duplicate key|already exists/i.test(message) &&
-        /email/i.test(message)
+      /idx_users_email|duplicate key|already exists/i.test(message) &&
+      /email/i.test(message)
     ) {
-      fieldErrors.email =
-          'Ten adres e-mail jest już zarejestrowany.'
+      fieldErrors.email = "Ten adres e-mail jest już zarejestrowany.";
     }
 
     // Nieprawidłowy kod organizatora
     if (
-        selectedRole?.name === 'ORGANISER' &&
-        (
-            /the provided code was not found|organiser code|organizer code/i.test(message) ||
-            (status === 400 && Number(data?.status) === 403)
-        )
+      selectedRole?.name === "ORGANISER" &&
+      (/the provided code was not found|organiser code|organizer code/i.test(
+        message,
+      ) ||
+        (status === 400 && Number(data?.status) === 403))
     ) {
       fieldErrors.organizerCode =
-          'Nieprawidłowy lub wykorzystany kod Organizatora.'
+        "Nieprawidłowy lub wykorzystany kod Organizatora.";
     }
 
     // Ukrywanie technicznych komunikatów SQL
     for (const key of Object.keys(fieldErrors)) {
-      const value = String(fieldErrors[key])
+      const value = String(fieldErrors[key]);
 
-      if (
-          /SQL|constraint|duplicate key|insert into|stacktrace/i.test(value)
-      ) {
-        fieldErrors[key] = 'Nieprawidłowa wartość.'
+      if (/SQL|constraint|duplicate key|insert into|stacktrace/i.test(value)) {
+        fieldErrors[key] = "Nieprawidłowa wartość.";
       }
     }
 
-    setErrors(previous => ({
+    setErrors((previous) => ({
       ...previous,
       ...fieldErrors,
-    }))
+    }));
 
     if (Object.keys(fieldErrors).length > 0) {
-      setServerError('')
+      setServerError("");
     } else if (status >= 500) {
-      setServerError(
-          'Wystąpił błąd serwera. Spróbuj ponownie później.'
-      )
+      setServerError("Wystąpił błąd serwera. Spróbuj ponownie później.");
     } else {
-      setServerError(
-          'Nie udało się utworzyć konta. Sprawdź dane formularza.'
-      )
+      setServerError("Nie udało się utworzyć konta. Sprawdź dane formularza.");
     }
   }
 
   // Wysyłanie formularza do backendu
   async function handleSubmit(event) {
-    event.preventDefault()
+    event.preventDefault();
 
-    if (loading) return
+    if (loading) return;
 
-    const newErrors = validate()
+    const newErrors = validate();
 
-    setErrors(newErrors)
-    setServerError('')
-    setSuccess(false)
+    setErrors(newErrors);
+    setServerError("");
+    setSuccess(false);
 
     if (Object.keys(newErrors).length > 0) {
-      return
+      return;
     }
 
     const requestBody = {
@@ -249,332 +244,287 @@ function App() {
         name: selectedRole.name,
       },
       organiserCode:
-          selectedRole.name === 'ORGANISER'
-              ? form.organizerCode
-              : null,
-    }
+        selectedRole.name === "ORGANISER" ? form.organizerCode : null,
+    };
 
-    setLoading(true)
+    setLoading(true);
 
     try {
-      const response = await fetch('/api/auth/register', {
-        method: 'POST',
+      const response = await fetch("/api/auth/register", {
+        method: "POST",
+        credentials: "include",
         headers: {
-          'Content-Type': 'application/json',
+          "Content-Type": "application/json",
+          "X-XSRF-TOKEN": csrfToken,
         },
         body: JSON.stringify(requestBody),
-      })
+      });
 
       if (response.ok) {
-        setSuccess(true)
+        setSuccess(true);
 
-        setForm(previous => ({
+        setForm((previous) => ({
           ...previous,
-          password: '',
-          confirmPassword: '',
-          organizerCode: '',
-        }))
+          password: "",
+          confirmPassword: "",
+          organizerCode: "",
+        }));
       } else {
-        const data = await response.json().catch(() => ({}))
+        const data = await response.json().catch(() => ({}));
 
-        handleApiErrors(data, response.status)
+        handleApiErrors(data, response.status);
       }
     } catch (error) {
-      console.error(error)
+      console.error(error);
 
-      setServerError(
-          'Nie można połączyć się z serwerem.'
-      )
+      setServerError("Nie można połączyć się z serwerem.");
     } finally {
-      setLoading(false)
+      setLoading(false);
     }
   }
 
   return (
-      <div className="page">
+    <div className="page">
+      <div className="left-panel">
+        <header className="logo">
+          <span className="logo-symbol">●</span>
 
-        <div className="left-panel">
+          <div>
+            <strong>KOALA</strong>
+            <small>Konkurs Matematyczno-Informatyczny</small>
+          </div>
+        </header>
 
-          <header className="logo">
-            <span className="logo-symbol">●</span>
+        <main className="form-container">
+          <a href="#" className="back-link">
+            ← Wróć do logowania
+          </a>
 
-            <div>
-              <strong>KOALA</strong>
-              <small>Konkurs Matematyczno-Informatyczny</small>
-            </div>
-          </header>
+          <p className="eyebrow">NOWE KONTO</p>
 
-          <main className="form-container">
+          <h1>Rejestracja konta</h1>
 
-            <a href="#" className="back-link">
-              ← Wróć do logowania
-            </a>
+          <p className="subtitle">
+            Podaj swoje dane, aby utworzyć konto w systemie KOALA.
+          </p>
 
-            <p className="eyebrow">NOWE KONTO</p>
+          <form onSubmit={handleSubmit} noValidate>
+            <div className="form-row">
+              <div className="field">
+                <label htmlFor="firstName">Imię</label>
 
-            <h1>Rejestracja konta</h1>
+                <input
+                  id="firstName"
+                  name="firstName"
+                  value={form.firstName}
+                  onChange={handleChange}
+                />
 
-            <p className="subtitle">
-              Podaj swoje dane, aby utworzyć konto w systemie KOALA.
-            </p>
-
-            <form onSubmit={handleSubmit} noValidate>
-
-              <div className="form-row">
-
-                <div className="field">
-                  <label htmlFor="firstName">Imię</label>
-
-                  <input
-                      id="firstName"
-                      name="firstName"
-                      value={form.firstName}
-                      onChange={handleChange}
-                  />
-
-                  {errors.firstName && (
-                      <span className="error">
-                    {errors.firstName}
-                  </span>
-                  )}
-                </div>
-
-                <div className="field">
-                  <label htmlFor="lastName">Nazwisko</label>
-
-                  <input
-                      id="lastName"
-                      name="lastName"
-                      value={form.lastName}
-                      onChange={handleChange}
-                  />
-
-                  {errors.lastName && (
-                      <span className="error">
-                    {errors.lastName}
-                  </span>
-                  )}
-                </div>
-
+                {errors.firstName && (
+                  <span className="error">{errors.firstName}</span>
+                )}
               </div>
 
               <div className="field">
-                <label htmlFor="email">Adres e-mail</label>
+                <label htmlFor="lastName">Nazwisko</label>
 
                 <input
-                    id="email"
-                    name="email"
-                    type="email"
-                    placeholder="twoj@email.pl"
-                    value={form.email}
-                    onChange={handleChange}
+                  id="lastName"
+                  name="lastName"
+                  value={form.lastName}
+                  onChange={handleChange}
                 />
 
-                {errors.email && (
-                    <span className="error" role="alert">
+                {errors.lastName && (
+                  <span className="error">{errors.lastName}</span>
+                )}
+              </div>
+            </div>
+
+            <div className="field">
+              <label htmlFor="email">Adres e-mail</label>
+
+              <input
+                id="email"
+                name="email"
+                type="email"
+                placeholder="twoj@email.pl"
+                value={form.email}
+                onChange={handleChange}
+              />
+
+              {errors.email && (
+                <span className="error" role="alert">
                   {errors.email}
                 </span>
-                )}
-              </div>
-
-              <div className="form-row">
-
-                <div className="field">
-                  <label htmlFor="password">Hasło</label>
-
-                  <input
-                      id="password"
-                      name="password"
-                      type="password"
-                      value={form.password}
-                      onChange={handleChange}
-                  />
-
-                  {errors.password && (
-                      <span className="error">
-                    {errors.password}
-                  </span>
-                  )}
-                </div>
-
-                <div className="field">
-                  <label htmlFor="confirmPassword">
-                    Potwierdź hasło
-                  </label>
-
-                  <input
-                      id="confirmPassword"
-                      name="confirmPassword"
-                      type="password"
-                      value={form.confirmPassword}
-                      onChange={handleChange}
-                  />
-
-                  {errors.confirmPassword && (
-                      <span className="error">
-                    {errors.confirmPassword}
-                  </span>
-                  )}
-                </div>
-
-              </div>
-
-              <p className="hint">
-                Hasło powinno zawierać od 8 do 64 znaków.
-              </p>
-
-              <div className="field">
-                <label htmlFor="roleId">Rola użytkownika</label>
-
-                <select
-                    id="roleId"
-                    name="roleId"
-                    value={form.roleId}
-                    onChange={handleChange}
-                    style={{
-                      width: '100%',
-                      height: '49px',
-                      padding: '0 14px',
-                      border: '1px solid #cfddd8',
-                      borderRadius: '8px',
-                      background: 'white',
-                    }}
-                >
-                  <option value="">Wybierz rolę</option>
-
-                  {roles.map(role => (
-                      <option key={role.id} value={role.id}>
-                        {role.name === 'USER'
-                            ? 'Użytkownik'
-                            : role.name === 'ORGANISER'
-                                ? 'Organizator'
-                                : role.name === 'GUARDIAN'
-                                    ? 'Opiekun'
-                                    : role.name}
-                      </option>
-                  ))}
-                </select>
-
-                {rolesError && (
-                    <span className="error">
-                  {rolesError}
-                </span>
-                )}
-
-                {errors.roleId && (
-                    <span className="error">
-                  {errors.roleId}
-                </span>
-                )}
-              </div>
-
-              {selectedRole?.name === 'ORGANISER' && (
-                  <div className="field">
-
-                    <label htmlFor="organizerCode">
-                      Kod Organizatora
-                    </label>
-
-                    <input
-                        id="organizerCode"
-                        name="organizerCode"
-                        placeholder="Np. AB12CD"
-                        value={form.organizerCode}
-                        onChange={handleChange}
-                    />
-
-                    {errors.organizerCode && (
-                        <span className="error" role="alert">
-                    {errors.organizerCode}
-                  </span>
-                    )}
-
-                  </div>
               )}
+            </div>
 
-              <label className="checkbox-label">
+            <div className="form-row">
+              <div className="field">
+                <label htmlFor="password">Hasło</label>
+
                 <input
-                    type="checkbox"
-                    name="accepted"
-                    checked={form.accepted}
-                    onChange={handleChange}
+                  id="password"
+                  name="password"
+                  type="password"
+                  value={form.password}
+                  onChange={handleChange}
                 />
 
-                <span>
-                Akceptuję regulamin konkursu i politykę prywatności.
-              </span>
-              </label>
+                {errors.password && (
+                  <span className="error">{errors.password}</span>
+                )}
+              </div>
 
-              {errors.accepted && (
-                  <span className="error">
-                {errors.accepted}
-              </span>
-              )}
+              <div className="field">
+                <label htmlFor="confirmPassword">Potwierdź hasło</label>
 
-              <button
-                  type="submit"
-                  className="submit-button"
-                  disabled={loading || roles.length === 0}
+                <input
+                  id="confirmPassword"
+                  name="confirmPassword"
+                  type="password"
+                  value={form.confirmPassword}
+                  onChange={handleChange}
+                />
+
+                {errors.confirmPassword && (
+                  <span className="error">{errors.confirmPassword}</span>
+                )}
+              </div>
+            </div>
+
+            <p className="hint">Hasło powinno zawierać od 8 do 64 znaków.</p>
+
+            <div className="field">
+              <label htmlFor="roleId">Rola użytkownika</label>
+
+              <select
+                id="roleId"
+                name="roleId"
+                value={form.roleId}
+                onChange={handleChange}
+                style={{
+                  width: "100%",
+                  height: "49px",
+                  padding: "0 14px",
+                  border: "1px solid #cfddd8",
+                  borderRadius: "8px",
+                  background: "white",
+                }}
               >
-                {loading
-                    ? 'Trwa rejestracja...'
-                    : 'Utwórz konto →'}
-              </button>
+                <option value="">Wybierz rolę</option>
 
-              {serverError && (
-                  <p className="error" role="alert">
-                    {serverError}
-                  </p>
-              )}
+                {roles.map((role) => (
+                  <option key={role.id} value={role.id}>
+                    {role.name === "USER"
+                      ? "Użytkownik"
+                      : role.name === "ORGANISER"
+                        ? "Organizator"
+                        : role.name === "GUARDIAN"
+                          ? "Opiekun"
+                          : role.name}
+                  </option>
+                ))}
+              </select>
 
-              {success && (
-                  <p
-                      className="success"
-                      role="status"
-                      style={{
-                        marginTop: '18px',
-                        padding: '14px',
-                        background: '#e5f7ed',
-                        border: '1px solid #7aca9e',
-                        borderRadius: '8px',
-                        color: '#006b43',
-                        fontWeight: 'bold',
-                        textAlign: 'center',
-                      }}
-                  >
-                    Konto zostało pomyślnie utworzone!
-                  </p>
-              )}
+              {rolesError && <span className="error">{rolesError}</span>}
 
-            </form>
+              {errors.roleId && <span className="error">{errors.roleId}</span>}
+            </div>
 
-            <p className="login-footer">
-              Masz już konto? <a href="#">Zaloguj się</a>
-            </p>
+            {selectedRole?.name === "ORGANISER" && (
+              <div className="field">
+                <label htmlFor="organizerCode">Kod Organizatora</label>
 
-          </main>
-        </div>
+                <input
+                  id="organizerCode"
+                  name="organizerCode"
+                  placeholder="Np. AB12CD"
+                  value={form.organizerCode}
+                  onChange={handleChange}
+                />
 
+                {errors.organizerCode && (
+                  <span className="error" role="alert">
+                    {errors.organizerCode}
+                  </span>
+                )}
+              </div>
+            )}
 
-        <aside className="right-panel">
-          <div className="decor">∑</div>
+            <label className="checkbox-label">
+              <input
+                type="checkbox"
+                name="accepted"
+                checked={form.accepted}
+                onChange={handleChange}
+              />
 
-          <div className="right-content">
-            <h2>
-              Połącz logikę<br />
-              z kreatywnością.
-            </h2>
+              <span>Akceptuję regulamin konkursu i politykę prywatności.</span>
+            </label>
 
-            <p>
-              Załóż konto i przygotuj się do wyzwań
-              na styku matematyki i informatyki.
-            </p>
-          </div>
-        </aside>
+            {errors.accepted && (
+              <span className="error">{errors.accepted}</span>
+            )}
 
+            <button
+              type="submit"
+              className="submit-button"
+              disabled={loading || roles.length === 0}
+            >
+              {loading ? "Trwa rejestracja..." : "Utwórz konto →"}
+            </button>
 
+            {serverError && (
+              <p className="error" role="alert">
+                {serverError}
+              </p>
+            )}
+
+            {success && (
+              <p
+                className="success"
+                role="status"
+                style={{
+                  marginTop: "18px",
+                  padding: "14px",
+                  background: "#e5f7ed",
+                  border: "1px solid #7aca9e",
+                  borderRadius: "8px",
+                  color: "#006b43",
+                  fontWeight: "bold",
+                  textAlign: "center",
+                }}
+              >
+                Konto zostało pomyślnie utworzone!
+              </p>
+            )}
+          </form>
+
+          <p className="login-footer">
+            Masz już konto? <a href="#">Zaloguj się</a>
+          </p>
+        </main>
       </div>
-  )
+
+      <aside className="right-panel">
+        <div className="decor">∑</div>
+
+        <div className="right-content">
+          <h2>
+            Połącz logikę
+            <br />z kreatywnością.
+          </h2>
+
+          <p>
+            Załóż konto i przygotuj się do wyzwań na styku matematyki i
+            informatyki.
+          </p>
+        </div>
+      </aside>
+    </div>
+  );
 }
 
-export default App
+export default App;
