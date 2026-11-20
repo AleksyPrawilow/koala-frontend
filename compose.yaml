@@ -1,0 +1,13 @@
+services:
+  web:
+    build: .
+    image: koala-web:latest
+    container_name: koala-web
+    restart: unless-stopped
+    ports:
+      - "80:80"
+
+networks:
+  default:
+    name: koala-net
+    external: true
